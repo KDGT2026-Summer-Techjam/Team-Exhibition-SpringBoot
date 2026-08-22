@@ -60,7 +60,15 @@
         <artifactId>postgresql</artifactId>
         <scope>runtime</scope>
     </dependency>
-
+    
+<!-- ================================
+     認証・パスワードハッシュ化
+     ================================ -->
+<!-- PasswordEncoderなどを使用するため -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
 
     <!-- ================================
          開発補助
