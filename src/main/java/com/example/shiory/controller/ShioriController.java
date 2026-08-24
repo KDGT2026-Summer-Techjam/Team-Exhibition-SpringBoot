@@ -6,12 +6,15 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.shiory.dto.ShioriCreateRequest;
+import com.example.shiory.dto.ShioriPeriodUpdateRequest;
 import com.example.shiory.service.ShioriService;
 
 @RestController
@@ -31,6 +34,16 @@ public class ShioriController {
 		UUID ownerId = currentUserId();
 
 		shioriService.createShiori(request, ownerId);
+
+		return ResponseEntity.ok().build();
+	}
+
+	@PatchMapping("/{shioriId}/period")
+	public ResponseEntity<Void> updatePeriod(
+			@PathVariable UUID shioriId,
+			@Valid @RequestBody ShioriPeriodUpdateRequest request) {
+
+		shioriService.updatePeriod(shioriId, currentUserId(), request);
 
 		return ResponseEntity.ok().build();
 	}
