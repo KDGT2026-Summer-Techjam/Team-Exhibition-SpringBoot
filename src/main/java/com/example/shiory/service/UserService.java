@@ -51,6 +51,10 @@ public class UserService {
 	@Transactional
 	public void updateUser(UUID userId, UserUpdateRequest request) {
 
+		if (!request.isUsernamePresent() && !request.isPasswordPresent()) {
+			throw new BadRequestException("更新する項目を指定してください");
+		}
+
 		User user = userRepository.findById(userId)
 				.orElseThrow(() ->
 						new ResourceNotFoundException("ユーザーが見つかりません"));
