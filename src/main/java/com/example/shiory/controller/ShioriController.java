@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.shiory.dto.ShioriCreateRequest;
 import com.example.shiory.dto.ShioriPeriodUpdateRequest;
+import com.example.shiory.dto.ShioriUpdateRequest;
 import com.example.shiory.service.ShioriService;
 
 @RestController
@@ -44,6 +45,19 @@ public class ShioriController {
 			@Valid @RequestBody ShioriPeriodUpdateRequest request) {
 
 		shioriService.updatePeriod(shioriId, currentUserId(), request);
+
+		return ResponseEntity.ok().build();
+	}
+
+	@PatchMapping("/{shioriId}")
+	public ResponseEntity<Void> updateShiori(
+			@PathVariable UUID shioriId,
+			@RequestBody ShioriUpdateRequest request) {
+
+		shioriService.updateShiori(
+				shioriId,
+				currentUserId(),
+				request);
 
 		return ResponseEntity.ok().build();
 	}

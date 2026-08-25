@@ -8,12 +8,17 @@ import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.dto.ShioriCreateRequest;
 import com.example.shiory.dto.ShioriPeriodUpdateRequest;
+import com.example.shiory.dto.ShioriUpdateRequest;
 import com.example.shiory.entity.Shiori;
 import com.example.shiory.entity.ShioriDay;
 import com.example.shiory.entity.ShioriMember;
+import com.example.shiory.exception.BadRequestException;
+import com.example.shiory.exception.ForbiddenException;
+import com.example.shiory.exception.ResourceNotFoundException;
 import com.example.shiory.repository.ShioriDayRepository;
 import com.example.shiory.repository.ShioriMemberRepository;
 import com.example.shiory.repository.ShioriRepository;
@@ -92,5 +97,57 @@ public class ShioriService {
 		}
 
 		shioriDayRepository.saveAll(days);
+	}
+
+	@Transactional
+	public void updateShiori(
+			UUID shioriId,
+			UUID callerId,
+			ShioriUpdateRequest request) {
+
+		Shiori shiori = shioriRepository.findById(shioriId)
+				.orElseThrow(() ->
+						new ResourceNotFoundException("しおりが見つかりません"));
+
+		if (!shiori.getOwnerId().equals(callerId)) {
+			throw new ForbiddenException("しおりの更新は作成者のみ行えます");
+		}
+
+		if (request.isTitlePresent()) {
+
+			if (request.getTitle() == null || request.getTitle().isBlank()) {
+				throw new BadRequestException("タイトルを入力してください");
+			}
+
+			shiori.setTitle(request.getTitle());
+		}
+
+		if (request.isDescriptionPresent()) {
+			shiori.setDescription(request.getDescription());
+		}
+
+		if (request.isPromisesPresent()) {
+			shiori.setPromises(request.getPromises());
+		}
+
+		if (request.isEditablePresent()) {
+
+			if (request.getEditable() == null) {
+				throw new BadRequestException("編集可否はnullにできません");
+			}
+
+			shiori.setEditable(request.getEditable());
+		}
+
+		if (request.isCommentOpenPresent()) {
+
+			if (request.getCommentOpen() == null) {
+				throw new BadRequestException("コメント公開設定はnullにできません");
+			}
+
+			shiori.setCommentOpen(request.getCommentOpen());
+		}
+
+		shioriRepository.save(shiori);
 	}
 }
