@@ -1,5 +1,7 @@
 package com.example.shiory.controller;
 
+import java.util.UUID;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -7,8 +9,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.PatchMapping;
 
 import com.example.shiory.dto.UserCreateRequest;
+import com.example.shiory.dto.UserUpdateRequest;
 import com.example.shiory.service.UserService;
 
 @RestController
@@ -28,5 +33,26 @@ public class UserController {
 		userService.createUser(request);
 
 		return ResponseEntity.ok().build();
+	}
+
+	@PatchMapping("/me")
+	public ResponseEntity<Void> updateUser(
+			@RequestBody UserUpdateRequest request) {
+
+		userService.updateUser(
+				currentUserId(),
+				request);
+
+		return ResponseEntity.ok().build();
+	}
+
+	private UUID currentUserId() {
+
+		String principal = (String) SecurityContextHolder
+				.getContext()
+				.getAuthentication()
+				.getPrincipal();
+
+		return UUID.fromString(principal);
 	}
 }
