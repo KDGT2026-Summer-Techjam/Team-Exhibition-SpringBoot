@@ -1,0 +1,13 @@
+package com.example.shiory.repository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.shiory.entity.Photo;
+
+public interface PhotoRepository extends JpaRepository<Photo, UUID> {
+
+	Optional<Photo> findByDayIdAndUserId(UUID dayId, UUID userId);
+}
