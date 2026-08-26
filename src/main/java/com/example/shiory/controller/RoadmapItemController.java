@@ -6,12 +6,15 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.shiory.dto.RoadmapItemCreateRequest;
+import com.example.shiory.dto.RoadmapItemUpdateRequest;
 import com.example.shiory.service.RoadmapItemService;
 
 @RestController
@@ -31,6 +34,24 @@ public class RoadmapItemController {
 		roadmapItemService.createRoadmapItem(dayId, currentUserId(), request);
 
 		return ResponseEntity.ok().build();
+	}
+
+	@PatchMapping("/api/roadmap-items/{itemId}")
+	public ResponseEntity<Void> updateRoadmapItem(
+			@PathVariable UUID itemId,
+			@RequestBody RoadmapItemUpdateRequest request) {
+
+		roadmapItemService.updateRoadmapItem(itemId, currentUserId(), request);
+
+		return ResponseEntity.ok().build();
+	}
+
+	@DeleteMapping("/api/roadmap-items/{itemId}")
+	public ResponseEntity<Void> deleteRoadmapItem(@PathVariable UUID itemId) {
+
+		roadmapItemService.deleteRoadmapItem(itemId, currentUserId());
+
+		return ResponseEntity.noContent().build();
 	}
 
 	private UUID currentUserId() {

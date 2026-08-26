@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.shiory.dto.LoginRequest;
 import com.example.shiory.entity.User;
+import com.example.shiory.exception.BadRequestException;
 import com.example.shiory.repository.UserRepository;
 import com.example.shiory.security.JwtService;
 
@@ -22,10 +23,10 @@ public class AuthService {
 
 		User user = userRepository
 				.findByUsernameOrEmail(request.getUsernameOrEmail(), request.getUsernameOrEmail())
-				.orElseThrow(() -> new IllegalArgumentException("ユーザー名/メールアドレスまたはパスワードが正しくありません"));
+				.orElseThrow(() -> new BadRequestException("ユーザー名/メールアドレスまたはパスワードが正しくありません"));
 
 		if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-			throw new IllegalArgumentException("ユーザー名/メールアドレスまたはパスワードが正しくありません");
+			throw new BadRequestException("ユーザー名/メールアドレスまたはパスワードが正しくありません");
 		}
 
 		return jwtService.generateToken(user.getId().toString());

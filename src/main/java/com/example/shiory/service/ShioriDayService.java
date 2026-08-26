@@ -9,169 +9,194 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.constant.CommentTargetType;
 import com.example.shiory.dto.ShioriDayInsertRequest;
-import com.example.shiory.entity.Shiori;
-import com.example.shiory.entity.ShioriDay;
+import com.example.shiory.dto.ShioriDayUpdateRequest;
 import com.example.shiory.entity.Photo;
 import com.example.shiory.entity.RoadmapItem;
+import com.example.shiory.entity.Shiori;
+import com.example.shiory.entity.ShioriDay;
+import com.example.shiory.entity.ShioriMember;
 import com.example.shiory.exception.BadRequestException;
 import com.example.shiory.exception.ForbiddenException;
 import com.example.shiory.exception.ResourceNotFoundException;
 import com.example.shiory.repository.CommentRepository;
-import com.example.shiory.repository.ShioriDayRepository;
-import com.example.shiory.repository.ShioriRepository;
-import com.example.shiory.repository.PhotoRepository;
 import com.example.shiory.repository.PhotoLikeRepository;
+import com.example.shiory.repository.PhotoRepository;
 import com.example.shiory.repository.RoadmapItemRepository;
+import com.example.shiory.repository.ShioriDayRepository;
+import com.example.shiory.repository.ShioriMemberRepository;
+import com.example.shiory.repository.ShioriRepository;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class ShioriDayService {
-	
-	private final ShioriRepository shioriRepository;
-	private final ShioriDayRepository shioriDayRepository;
-	private final RoadmapItemRepository roadmapItemRepository;
-	private final PhotoRepository photoRepository;
-	private final PhotoLikeRepository photoLikeRepository;
-	private final CommentRepository commentRepository;
 
-	@Transactional
-	public void insertDay(
-			UUID shioriId,
-			UUID callerId,
-			ShioriDayInsertRequest request) {
+      private final ShioriRepository shioriRepository;
+      private final ShioriDayRepository shioriDayRepository;
+      private final ShioriMemberRepository shioriMemberRepository;
+      private final RoadmapItemRepository roadmapItemRepository;
+      private final PhotoRepository photoRepository;
+      private final PhotoLikeRepository photoLikeRepository;
+      private final CommentRepository commentRepository;
 
-		Shiori shiori = shioriRepository.findById(shioriId)
-				.orElseThrow(() ->
-						new ResourceNotFoundException("しおりが見つかりません"));
+      @Transactional
+      public void insertDay(UUID shioriId, UUID callerId, ShioriDayInsertRequest request) {
 
-		if (!shiori.getOwnerId().equals(callerId)) {
-			throw new ForbiddenException("日次ページの挿入は作成者のみ行えます");
-		}
+              Shiori shiori = shioriRepository.findById(shioriId)
+                              .orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
 
-		ShioriDay lastDay = shioriDayRepository
-				.findTopByShioriIdOrderByDayNumberDesc(shioriId)
-				.orElseThrow(() ->
-						new BadRequestException("日次ページが存在しません"));
+              if (!shiori.getOwnerId().equals(callerId)) {
+                      throw new ForbiddenException("日次ページの挿入は作成者のみ行えます");
+              }
 
-		int maxDayNumber = lastDay.getDayNumber();
-		int afterDayNumber = request.getAfterDayNumber();
+              ShioriDay lastDay = shioriDayRepository
+                              .findTopByShioriIdOrderByDayNumberDesc(shioriId)
+                              .orElseThrow(() -> new BadRequestException("日次ページが存在しません"));
 
-		if (afterDayNumber > maxDayNumber) {
-			throw new BadRequestException("挿入位置が現在の日数を超えています");
-		}
+              int maxDayNumber = lastDay.getDayNumber();
+              int afterDayNumber = request.getAfterDayNumber();
 
-		List<ShioriDay> daysToShift = shioriDayRepository
-					.findByShioriIdAndDayNumberGreaterThanOrderByDayNumberDesc(
-							shioriId,
-							afterDayNumber);
+              if (afterDayNumber > maxDayNumber) {
+                      throw new BadRequestException("挿入位置が現在の日数を超えています");
+              }
 
-		for (ShioriDay day : daysToShift) {
+              List<ShioriDay> daysToShift = shioriDayRepository
+                              .findByShioriIdAndDayNumberGreaterThanOrderByDayNumberDesc(shioriId, afterDayNumber);
 
-			day.setDayNumber(day.getDayNumber() + 1);
-			day.setTripDate(day.getTripDate().plusDays(1));
+              for (ShioriDay day : daysToShift) {
 
-			shioriDayRepository.saveAndFlush(day);
-		}
+                      day.setDayNumber(day.getDayNumber() + 1);
+                      day.setTripDate(day.getTripDate().plusDays(1));
 
-		ShioriDay newDay = new ShioriDay();
+                      shioriDayRepository.saveAndFlush(day);
+              }
 
-		newDay.setShioriId(shioriId);
-		newDay.setDayNumber(afterDayNumber + 1);
+              ShioriDay newDay = new ShioriDay();
 
-		LocalDate newTripDate =
-				shiori.getStartDate().plusDays(afterDayNumber);
+              newDay.setShioriId(shioriId);
+              newDay.setDayNumber(afterDayNumber + 1);
+              newDay.setTripDate(shiori.getStartDate().plusDays(afterDayNumber));
 
-		newDay.setTripDate(newTripDate);
+              shioriDayRepository.saveAndFlush(newDay);
 
-		shioriDayRepository.saveAndFlush(newDay);
+              shiori.setEndDate(shiori.getEndDate().plusDays(1));
 
-		shiori.setEndDate(
-				shiori.getEndDate().plusDays(1));
+              shioriRepository.save(shiori);
+      }
 
-		shioriRepository.save(shiori);
-	}
+      @Transactional
+      public void deleteDay(UUID dayId, UUID callerId) {
 
-	@Transactional
-	public void deleteDay(
-			UUID dayId,
-			UUID callerId) {
+              ShioriDay day = shioriDayRepository.findById(dayId)
+                              .orElseThrow(() -> new ResourceNotFoundException("日次ページが見つかりません"));
 
-		ShioriDay day = shioriDayRepository.findById(dayId)
-				.orElseThrow(() ->
-						new ResourceNotFoundException("日次ページが見つかりません"));
+              Shiori shiori = shioriRepository.findById(day.getShioriId())
+                              .orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
 
-		Shiori shiori = shioriRepository.findById(day.getShioriId())
-				.orElseThrow(() ->
-						new ResourceNotFoundException("しおりが見つかりません"));
+              if (!shiori.getOwnerId().equals(callerId)) {
+                      throw new ForbiddenException("日次ページの削除は作成者のみ行えます");
+              }
 
-		if (!shiori.getOwnerId().equals(callerId)) {
-			throw new ForbiddenException(
-					"日次ページの削除は作成者のみ行えます");
-		}
+              int deletedDayNumber = day.getDayNumber();
 
-		int deletedDayNumber = day.getDayNumber();
+              List<RoadmapItem> roadmapItems = roadmapItemRepository.findByDayId(dayId);
 
-		List<RoadmapItem> roadmapItems =
-				roadmapItemRepository.findByDayId(dayId);
+              for (RoadmapItem roadmapItem : roadmapItems) {
+                      commentRepository.deleteByTargetTypeAndTargetId(CommentTargetType.ROADMAP_ITEM, roadmapItem.getId());
+              }
 
-		for (RoadmapItem roadmapItem : roadmapItems) {
-			commentRepository.deleteByTargetTypeAndTargetId(
-					CommentTargetType.ROADMAP_ITEM,
-					roadmapItem.getId());
-		}
+              List<Photo> photos = photoRepository.findByDayId(dayId);
 
-		List<Photo> photos =
-				photoRepository.findByDayId(dayId);
+              for (Photo photo : photos) {
+                      commentRepository.deleteByTargetTypeAndTargetId(CommentTargetType.PHOTO, photo.getId());
+                      photoLikeRepository.deleteByPhotoId(photo.getId());
+              }
 
-		for (Photo photo : photos) {
-			commentRepository.deleteByTargetTypeAndTargetId(
-					CommentTargetType.PHOTO,
-					photo.getId());
+              photoLikeRepository.flush();
 
-			photoLikeRepository.deleteByPhotoId(
-					photo.getId());
-		}
+              commentRepository.deleteByTargetTypeAndTargetId(CommentTargetType.SHIORI_DAY, dayId);
 
-		photoLikeRepository.flush();
+              day.setRepresentativePhotoId(null);
+              shioriDayRepository.saveAndFlush(day);
 
-		commentRepository.deleteByTargetTypeAndTargetId(
-				CommentTargetType.SHIORI_DAY,
-				dayId);
+              roadmapItemRepository.deleteAll(roadmapItems);
+              roadmapItemRepository.flush();
 
-		day.setRepresentativePhotoId(null);
-		shioriDayRepository.saveAndFlush(day);
+              photoRepository.deleteAll(photos);
+              photoRepository.flush();
 
-		roadmapItemRepository.deleteAll(roadmapItems);
-		roadmapItemRepository.flush();
+              shioriDayRepository.delete(day);
+              shioriDayRepository.flush();
 
-		photoRepository.deleteAll(photos);
-		photoRepository.flush();
+              List<ShioriDay> daysToShift = shioriDayRepository
+                              .findByShioriIdAndDayNumberGreaterThanOrderByDayNumberAsc(shiori.getId(), deletedDayNumber);
 
-		shioriDayRepository.delete(day);
-		shioriDayRepository.flush();
+              for (ShioriDay dayToShift : daysToShift) {
 
-		List<ShioriDay> daysToShift =
-				shioriDayRepository
-						.findByShioriIdAndDayNumberGreaterThanOrderByDayNumberAsc(
-								shiori.getId(),
-								deletedDayNumber);
+                      dayToShift.setDayNumber(dayToShift.getDayNumber() - 1);
+                      dayToShift.setTripDate(dayToShift.getTripDate().minusDays(1));
 
-		for (ShioriDay dayToShift : daysToShift) {
+                      shioriDayRepository.saveAndFlush(dayToShift);
+              }
 
-			dayToShift.setDayNumber(
-					dayToShift.getDayNumber() - 1);
+              shiori.setEndDate(shiori.getEndDate().minusDays(1));
 
-			dayToShift.setTripDate(
-					dayToShift.getTripDate().minusDays(1));
+              shioriRepository.save(shiori);
+      }
 
-			shioriDayRepository.saveAndFlush(dayToShift);
-		}
+      @Transactional
+      public void updateDay(UUID dayId, UUID callerId, ShioriDayUpdateRequest request) {
 
-		shiori.setEndDate(
-				shiori.getEndDate().minusDays(1));
+              ShioriDay day = shioriDayRepository.findById(dayId)
+                              .orElseThrow(() -> new ResourceNotFoundException("日次ページが見つかりません"));
 
-		shioriRepository.save(shiori);
-	}
+              Shiori shiori = shioriRepository.findById(day.getShioriId())
+                              .orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
+
+              ShioriMember member = shioriMemberRepository
+                              .findByShioriIdAndUserId(shiori.getId(), callerId)
+                              .orElseThrow(() -> new ForbiddenException("このしおりのメンバーではありません"));
+
+              if (!"active".equals(member.getStatus())) {
+                      throw new ForbiddenException("このしおりのメンバーではありません");
+              }
+
+              boolean isOwner = shiori.getOwnerId().equals(callerId);
+
+              if (!shiori.isEditable() && !isOwner) {
+                      throw new ForbiddenException("現在このしおりは編集が許可されていません");
+              }
+
+              if (request.isTitlePresent()) {
+                      day.setTitle(request.getTitle());
+              }
+
+              if (request.isNotesPresent()) {
+                      day.setNotes(request.getNotes());
+              }
+
+              if (request.isEstimatedCostPresent()) {
+                      day.setEstimatedCost(request.getEstimatedCost());
+              }
+
+              if (request.isRepresentativePhotoIdPresent()) {
+
+                      UUID photoId = request.getRepresentativePhotoId();
+
+                      if (photoId != null) {
+
+                              Photo photo = photoRepository.findById(photoId)
+                                              .orElseThrow(() -> new ResourceNotFoundException("写真が見つかりません"));
+
+                              if (!photo.getDayId().equals(dayId)) {
+                                      throw new BadRequestException("代表写真はこの日に投稿された写真から選んでください");
+                              }
+                      }
+
+                      day.setRepresentativePhotoId(photoId);
+              }
+
+              shioriDayRepository.save(day);
+      }
 }

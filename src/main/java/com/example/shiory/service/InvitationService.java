@@ -10,6 +10,9 @@ import com.example.shiory.dto.InvitationCreateRequest;
 import com.example.shiory.entity.Invitation;
 import com.example.shiory.entity.Shiori;
 import com.example.shiory.entity.ShioriMember;
+import com.example.shiory.exception.BadRequestException;
+import com.example.shiory.exception.ForbiddenException;
+import com.example.shiory.exception.ResourceNotFoundException;
 import com.example.shiory.repository.InvitationRepository;
 import com.example.shiory.repository.ShioriMemberRepository;
 import com.example.shiory.repository.ShioriRepository;
@@ -28,10 +31,10 @@ public class InvitationService {
 	public Invitation createInvitation(UUID shioriId, UUID inviterId, InvitationCreateRequest request) {
 
 		Shiori shiori = shioriRepository.findById(shioriId)
-				.orElseThrow(() -> new IllegalArgumentException("しおりが見つかりません"));
+				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
 
 		if (!shiori.getOwnerId().equals(inviterId)) {
-			throw new IllegalArgumentException("招待は作成者のみ行えます");
+			throw new ForbiddenException("招待は作成者のみ行えます");
 		}
 
 		Invitation invitation = new Invitation();
@@ -49,17 +52,17 @@ public class InvitationService {
 	public void acceptInvitation(String token, UUID userId, String password) {
 
 		Invitation invitation = invitationRepository.findByToken(token)
-				.orElseThrow(() -> new IllegalArgumentException("招待が見つかりません"));
+				.orElseThrow(() -> new ResourceNotFoundException("招待が見つかりません"));
 
 		if (!"pending".equals(invitation.getStatus())) {
-			throw new IllegalArgumentException("この招待は既に処理されています");
+			throw new BadRequestException("この招待は既に処理されています");
 		}
 
 		Shiori shiori = shioriRepository.findById(invitation.getShioriId())
-				.orElseThrow(() -> new IllegalArgumentException("しおりが見つかりません"));
+				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
 
 		if (!passwordEncoder.matches(password, shiori.getPasswordHash())) {
-			throw new IllegalArgumentException("しおりのパスワードが正しくありません");
+			throw new BadRequestException("しおりのパスワードが正しくありません");
 		}
 
 		invitation.setStatus("accepted");

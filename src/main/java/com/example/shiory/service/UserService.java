@@ -26,12 +26,12 @@ public class UserService {
 
 		// ユーザー名の重複チェック
 		if (userRepository.existsByUsername(request.getUsername())) {
-			throw new IllegalArgumentException("このユーザー名は既に使用されています");
+			throw new BadRequestException("このユーザー名は既に使用されています");
 		}
 
 		// メールアドレスの重複チェック
 		if (userRepository.existsByEmail(request.getEmail())) {
-			throw new IllegalArgumentException("このメールアドレスは既に使用されています");
+			throw new BadRequestException("このメールアドレスは既に使用されています");
 		}
 
 		// User Entityを作成

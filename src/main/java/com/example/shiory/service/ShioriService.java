@@ -10,9 +10,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.shiory.constant.ShioriMemberStatus;
 import com.example.shiory.dto.ShioriCreateRequest;
 import com.example.shiory.dto.ShioriPeriodUpdateRequest;
 import com.example.shiory.dto.ShioriUpdateRequest;
+import com.example.shiory.dto.ShioriDeleteRequest;
 import com.example.shiory.entity.Shiori;
 import com.example.shiory.entity.ShioriDay;
 import com.example.shiory.entity.ShioriMember;
@@ -60,18 +62,18 @@ public class ShioriService {
 	public void updatePeriod(UUID shioriId, UUID callerId, ShioriPeriodUpdateRequest request) {
 
 		Shiori shiori = shioriRepository.findById(shioriId)
-				.orElseThrow(() -> new IllegalArgumentException("しおりが見つかりません"));
+				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
 
 		if (!shiori.getOwnerId().equals(callerId)) {
-			throw new IllegalArgumentException("期間の設定は作成者のみ行えます");
+			throw new ForbiddenException("期間の設定は作成者のみ行えます");
 		}
 
 		if (request.getEndDate().isBefore(request.getStartDate())) {
-			throw new IllegalArgumentException("終了日は開始日以降にしてください");
+			throw new BadRequestException("終了日は開始日以降にしてください");
 		}
 
 		if (shioriDayRepository.existsByShioriId(shioriId)) {
-			throw new IllegalArgumentException("既に日次ページが作成済みのため、期間は変更できません");
+			throw new BadRequestException("既に日次ページが作成済みのため、期間は変更できません");
 		}
 
 		shiori.setStartDate(request.getStartDate());
@@ -147,6 +149,40 @@ public class ShioriService {
 
 			shiori.setCommentOpen(request.getCommentOpen());
 		}
+
+		shioriRepository.save(shiori);
+	}
+
+	@Transactional
+	public void deleteShiori(
+			UUID shioriId,
+			UUID callerId,
+			ShioriDeleteRequest request) {
+
+		Shiori shiori = shioriRepository.findById(shioriId)
+				.orElseThrow(() ->
+						new ResourceNotFoundException("しおりが見つかりません"));
+
+		if (!shiori.getOwnerId().equals(callerId)) {
+			throw new ForbiddenException("しおりの削除は作成者のみ行えます");
+		}
+
+		if (!passwordEncoder.matches(
+				request.getPassword(),
+				shiori.getPasswordHash())) {
+
+			throw new BadRequestException("パスワードが一致しません");
+		}
+
+		if (shioriMemberRepository.existsByShioriIdAndStatusAndUserIdNot(
+						shioriId,
+						ShioriMemberStatus.ACTIVE,
+						callerId)) {
+
+			throw new BadRequestException("退出していないメンバーがいるため削除できません");
+		}
+
+		shiori.setDeletedAt(OffsetDateTime.now());
 
 		shioriRepository.save(shiori);
 	}
