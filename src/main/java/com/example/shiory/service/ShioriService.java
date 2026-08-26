@@ -62,18 +62,18 @@ public class ShioriService {
 	public void updatePeriod(UUID shioriId, UUID callerId, ShioriPeriodUpdateRequest request) {
 
 		Shiori shiori = shioriRepository.findById(shioriId)
-				.orElseThrow(() -> new IllegalArgumentException("しおりが見つかりません"));
+				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
 
 		if (!shiori.getOwnerId().equals(callerId)) {
-			throw new IllegalArgumentException("期間の設定は作成者のみ行えます");
+			throw new ForbiddenException("期間の設定は作成者のみ行えます");
 		}
 
 		if (request.getEndDate().isBefore(request.getStartDate())) {
-			throw new IllegalArgumentException("終了日は開始日以降にしてください");
+			throw new BadRequestException("終了日は開始日以降にしてください");
 		}
 
 		if (shioriDayRepository.existsByShioriId(shioriId)) {
-			throw new IllegalArgumentException("既に日次ページが作成済みのため、期間は変更できません");
+			throw new BadRequestException("既に日次ページが作成済みのため、期間は変更できません");
 		}
 
 		shiori.setStartDate(request.getStartDate());
