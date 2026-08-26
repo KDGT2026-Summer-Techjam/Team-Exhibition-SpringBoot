@@ -68,7 +68,15 @@ public class ShioriService {
 			throw new ForbiddenException("期間の設定は作成者のみ行えます");
 		}
 
-		if (request.getEndDate().isBefore(request.getStartDate())) {
+		LocalDate endDate = request.getEndDate();
+
+		LocalDate startDate = request.getStartDate();
+
+		if (startDate == null) {
+			startDate = endDate;
+		}
+
+		if (endDate.isBefore(startDate)) {
 			throw new BadRequestException("終了日は開始日以降にしてください");
 		}
 
@@ -76,16 +84,16 @@ public class ShioriService {
 			throw new BadRequestException("既に日次ページが作成済みのため、期間は変更できません");
 		}
 
-		shiori.setStartDate(request.getStartDate());
-		shiori.setEndDate(request.getEndDate());
+		shiori.setStartDate(startDate);
+		shiori.setEndDate(endDate);
 
 		shioriRepository.save(shiori);
 
 		List<ShioriDay> days = new ArrayList<>();
 		int dayNumber = 1;
 
-		for (LocalDate date = request.getStartDate();
-				!date.isAfter(request.getEndDate());
+		for (LocalDate date = startDate;
+				!date.isAfter(endDate);
 				date = date.plusDays(1)) {
 
 			ShioriDay day = new ShioriDay();
