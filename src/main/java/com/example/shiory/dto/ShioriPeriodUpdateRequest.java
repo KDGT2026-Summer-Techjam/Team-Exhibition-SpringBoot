@@ -11,7 +11,6 @@ import lombok.Setter;
 @Setter
 public class ShioriPeriodUpdateRequest {
 
-	@NotNull
 	private LocalDate startDate;
 
 	@NotNull
