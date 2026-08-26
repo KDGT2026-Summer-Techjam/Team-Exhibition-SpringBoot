@@ -9,13 +9,19 @@ import com.example.shiory.entity.ShioriMember;
 
 public interface ShioriMemberRepository extends JpaRepository<ShioriMember, UUID> {
 
-      Optional<ShioriMember> findByShioriIdAndUserId(
-                      UUID shioriId,
-                      UUID userId
-      );
+	Optional<ShioriMember> findByShioriIdAndUserId(
+			    UUID shioriId,
+			    UUID userId
+	);
 
-      Optional<ShioriMember> findByIdAndShioriId(
-                      UUID memberId,
-                      UUID shioriId
-      );
+	Optional<ShioriMember> findByIdAndShioriId(
+			    UUID memberId,
+			    UUID shioriId
+	);
+	boolean existsByShioriIdAndStatusAndUserIdNot(
+			UUID shioriId,
+			String status,
+			UUID userId
+	);
+
 }

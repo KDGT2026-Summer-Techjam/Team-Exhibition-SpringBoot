@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.shiory.dto.ShioriCreateRequest;
+import com.example.shiory.dto.ShioriDeleteRequest;
 import com.example.shiory.dto.ShioriPeriodUpdateRequest;
 import com.example.shiory.dto.ShioriUpdateRequest;
 import com.example.shiory.service.ShioriService;
@@ -60,6 +62,19 @@ public class ShioriController {
 				request);
 
 		return ResponseEntity.ok().build();
+	}
+
+	@DeleteMapping("/{shioriId}")
+	public ResponseEntity<Void> deleteShiori(
+			@PathVariable UUID shioriId,
+			@Valid @RequestBody ShioriDeleteRequest request) {
+
+		shioriService.deleteShiori(
+				shioriId,
+				currentUserId(),
+				request);
+
+		return ResponseEntity.noContent().build();
 	}
 
 	private UUID currentUserId() {
