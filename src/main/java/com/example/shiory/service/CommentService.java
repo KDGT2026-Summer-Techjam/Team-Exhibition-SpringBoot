@@ -13,11 +13,13 @@ import com.example.shiory.dto.CommentUpdateRequest;
 import com.example.shiory.entity.Comment;
 import com.example.shiory.entity.Shiori;
 import com.example.shiory.entity.ShioriDay;
+import com.example.shiory.entity.Photo;
 import com.example.shiory.entity.RoadmapItem;
 import com.example.shiory.exception.BadRequestException;
 import com.example.shiory.exception.ForbiddenException;
 import com.example.shiory.exception.ResourceNotFoundException;
 import com.example.shiory.repository.CommentRepository;
+import com.example.shiory.repository.PhotoRepository;
 import com.example.shiory.repository.RoadmapItemRepository;
 import com.example.shiory.repository.ShioriDayRepository;
 import com.example.shiory.repository.ShioriRepository;
@@ -38,6 +40,7 @@ public class CommentService {
 	private final ShioriRepository shioriRepository;
 	private final ShioriDayRepository shioriDayRepository;
 	private final RoadmapItemRepository roadmapItemRepository;
+	private final PhotoRepository photoRepository;
 
 	@Transactional
 	public Comment createComment(
@@ -146,6 +149,16 @@ public class CommentService {
 		}
 
 		// ⑧ photo のチェック
+		if (CommentTargetType.PHOTO.equals(request.getTargetType())) {
+
+			Photo photo = photoRepository.findById(request.getTargetId())
+					.orElseThrow(() ->
+							new ResourceNotFoundException("写真が見つかりません"));
+
+			if (!photo.getShioriId().equals(request.getShioriId())) {
+				throw new BadRequestException("コメント対象の写真がこのしおりに属していません");
+			}
+		}
 
 
 		// ⑨ Comment を作成して保存
