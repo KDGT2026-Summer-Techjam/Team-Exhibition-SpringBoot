@@ -9,4 +9,6 @@ import com.example.shiory.entity.PhotoLike;
 public interface PhotoLikeRepository extends JpaRepository<PhotoLike, UUID> {
 
 	long countByPhotoId(UUID photoId);
+
+	void deleteByPhotoId(UUID photoId);
 }

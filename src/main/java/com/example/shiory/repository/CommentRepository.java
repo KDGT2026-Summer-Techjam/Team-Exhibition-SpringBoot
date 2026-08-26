@@ -10,4 +10,9 @@ import com.example.shiory.entity.Comment;
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
 	List<Comment> findByShioriIdOrderByCreatedAtAsc(UUID shioriId);
+
+	void deleteByTargetTypeAndTargetId(
+			String targetType,
+			UUID targetId
+	);
 }
