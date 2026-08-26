@@ -50,6 +50,12 @@ public class CommentController {
 		return ResponseEntity.ok(comments);
 	}
 
+	@GetMapping("/comments/{id}")
+	public ResponseEntity<Comment> getComment(@PathVariable UUID id) {
+
+		return ResponseEntity.ok(commentService.getComment(id));
+	}
+
 	@PatchMapping("/comments/{id}")
 	public ResponseEntity<Comment> updateComment(
 			@PathVariable UUID id,

@@ -1,5 +1,6 @@
 package com.example.shiory.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -7,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.shiory.dto.InvitationAcceptRequest;
 import com.example.shiory.dto.InvitationCreateRequest;
 import com.example.shiory.dto.InvitationResponse;
+import com.example.shiory.dto.InvitationSummaryResponse;
 import com.example.shiory.entity.Invitation;
 import com.example.shiory.service.InvitationService;
 
@@ -51,6 +54,12 @@ public class InvitationController {
 		invitationService.acceptInvitation(token, currentUserId(), request.getPassword());
 
 		return ResponseEntity.ok().build();
+	}
+
+	@GetMapping("/api/shioris/{shioriId}/invitations")
+	public ResponseEntity<List<InvitationSummaryResponse>> getInvitations(@PathVariable UUID shioriId) {
+
+		return ResponseEntity.ok(invitationService.getInvitations(shioriId, currentUserId()));
 	}
 
 	private UUID currentUserId() {

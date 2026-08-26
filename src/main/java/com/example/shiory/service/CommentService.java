@@ -175,6 +175,24 @@ public class CommentService {
 		return commentRepository.findByShioriIdOrderByCreatedAtAsc(shioriId);
 	}
 
+	@Transactional(readOnly = true)
+	public Comment getComment(UUID commentId) {
+
+		Comment comment = commentRepository.findById(commentId)
+				.orElseThrow(() ->
+						new ResourceNotFoundException("コメントが見つかりません"));
+
+		Shiori shiori = shioriRepository.findById(comment.getShioriId())
+				.orElseThrow(() ->
+						new ResourceNotFoundException("しおりが見つかりません"));
+
+		if (!shiori.isCommentOpen()) {
+			throw new ForbiddenException("このしおりのコメントは現在公開されていません");
+		}
+
+		return comment;
+	}
+
 	@Transactional
 	public Comment updateComment(
 			UUID commentId,

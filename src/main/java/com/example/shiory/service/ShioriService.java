@@ -12,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.constant.ShioriMemberStatus;
 import com.example.shiory.dto.ShioriCreateRequest;
-import com.example.shiory.dto.ShioriPeriodUpdateRequest;
-import com.example.shiory.dto.ShioriUpdateRequest;
 import com.example.shiory.dto.ShioriDeleteRequest;
+import com.example.shiory.dto.ShioriDetailResponse;
+import com.example.shiory.dto.ShioriPeriodUpdateRequest;
+import com.example.shiory.dto.ShioriSummaryResponse;
+import com.example.shiory.dto.ShioriUpdateRequest;
 import com.example.shiory.entity.Shiori;
 import com.example.shiory.entity.ShioriDay;
 import com.example.shiory.entity.ShioriMember;
@@ -193,5 +195,56 @@ public class ShioriService {
 		shiori.setDeletedAt(OffsetDateTime.now());
 
 		shioriRepository.save(shiori);
+	}
+
+	@Transactional(readOnly = true)
+	public List<ShioriSummaryResponse> getShioriList(UUID callerId) {
+
+		List<UUID> shioriIds = shioriMemberRepository
+				.findByUserIdAndStatus(callerId, ShioriMemberStatus.ACTIVE)
+				.stream()
+				.map(ShioriMember::getShioriId)
+				.toList();
+
+		return shioriRepository
+				.findByIdInAndDeletedAtIsNullOrderByCreatedAtAsc(shioriIds)
+				.stream()
+				.map(shiori -> new ShioriSummaryResponse(
+						shiori.getId(),
+						shiori.getTitle(),
+						shiori.getStartDate(),
+						shiori.getEndDate(),
+						shiori.getOwnerId(),
+						shiori.getCreatedAt()))
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public ShioriDetailResponse getShioriDetail(UUID shioriId, UUID callerId) {
+
+		Shiori shiori = shioriRepository.findById(shioriId)
+				.filter(s -> s.getDeletedAt() == null)
+				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
+
+		ShioriMember member = shioriMemberRepository
+				.findByShioriIdAndUserId(shioriId, callerId)
+				.orElseThrow(() -> new ForbiddenException("このしおりのメンバーではありません"));
+
+		if (!ShioriMemberStatus.ACTIVE.equals(member.getStatus())) {
+			throw new ForbiddenException("このしおりのメンバーではありません");
+		}
+
+		return new ShioriDetailResponse(
+				shiori.getId(),
+				shiori.getOwnerId(),
+				shiori.getTitle(),
+				shiori.getDescription(),
+				shiori.getStartDate(),
+				shiori.getEndDate(),
+				shiori.isEditable(),
+				shiori.isCommentOpen(),
+				shiori.getPromises(),
+				shiori.getCreatedAt(),
+				shiori.getUpdatedAt());
 	}
 }

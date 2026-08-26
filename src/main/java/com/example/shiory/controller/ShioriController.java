@@ -1,5 +1,6 @@
 package com.example.shiory.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -7,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.shiory.dto.ShioriCreateRequest;
 import com.example.shiory.dto.ShioriDeleteRequest;
+import com.example.shiory.dto.ShioriDetailResponse;
 import com.example.shiory.dto.ShioriPeriodUpdateRequest;
+import com.example.shiory.dto.ShioriSummaryResponse;
 import com.example.shiory.dto.ShioriUpdateRequest;
 import com.example.shiory.service.ShioriService;
 
@@ -75,6 +79,18 @@ public class ShioriController {
 				request);
 
 		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping
+	public ResponseEntity<List<ShioriSummaryResponse>> getShioriList() {
+
+		return ResponseEntity.ok(shioriService.getShioriList(currentUserId()));
+	}
+
+	@GetMapping("/{shioriId}")
+	public ResponseEntity<ShioriDetailResponse> getShioriDetail(@PathVariable UUID shioriId) {
+
+		return ResponseEntity.ok(shioriService.getShioriDetail(shioriId, currentUserId()));
 	}
 
 	private UUID currentUserId() {

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.dto.UserCreateRequest;
+import com.example.shiory.dto.UserResponse;
 import com.example.shiory.dto.UserUpdateRequest;
 import com.example.shiory.entity.User;
 import com.example.shiory.exception.BadRequestException;
@@ -94,5 +95,18 @@ public class UserService {
 		}
 
 		userRepository.save(user);
+	}
+
+	@Transactional(readOnly = true)
+	public UserResponse getMe(UUID userId) {
+
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new ResourceNotFoundException("ユーザーが見つかりません"));
+
+		return new UserResponse(
+				user.getId(),
+				user.getUsername(),
+				user.getEmail(),
+				user.getCreatedAt());
 	}
 }

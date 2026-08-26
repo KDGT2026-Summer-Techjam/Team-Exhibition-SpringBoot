@@ -25,4 +25,6 @@ public interface ShioriDayRepository extends JpaRepository<ShioriDay, UUID> {
 	Optional<ShioriDay> findTopByShioriIdOrderByDayNumberDesc(
 			UUID shioriId
 	);
+
+	List<ShioriDay> findByShioriIdOrderByDayNumberAsc(UUID shioriId);
 }

@@ -1,11 +1,14 @@
 package com.example.shiory.service;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.dto.RoadmapItemCreateRequest;
+import com.example.shiory.dto.RoadmapItemResponse;
 import com.example.shiory.dto.RoadmapItemUpdateRequest;
 import com.example.shiory.entity.RoadmapItem;
 import com.example.shiory.entity.Shiori;
@@ -108,6 +111,59 @@ public class RoadmapItemService {
 		requireEditableMember(day, callerId);
 
 		roadmapItemRepository.delete(item);
+	}
+
+	@Transactional(readOnly = true)
+	public List<RoadmapItemResponse> getRoadmapItems(UUID dayId, UUID callerId) {
+
+		ShioriDay day = shioriDayRepository.findById(dayId)
+				.orElseThrow(() -> new ResourceNotFoundException("日次ページが見つかりません"));
+
+		requireActiveMember(day, callerId);
+
+		return roadmapItemRepository.findByDayIdOrderByStartsAtAscSortOrderAsc(dayId)
+				.stream()
+				.map(this::toResponse)
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public RoadmapItemResponse getRoadmapItem(UUID itemId, UUID callerId) {
+
+		RoadmapItem item = roadmapItemRepository.findById(itemId)
+				.orElseThrow(() -> new ResourceNotFoundException("予定が見つかりません"));
+
+		ShioriDay day = shioriDayRepository.findById(item.getDayId())
+				.orElseThrow(() -> new ResourceNotFoundException("日次ページが見つかりません"));
+
+		requireActiveMember(day, callerId);
+
+		return toResponse(item);
+	}
+
+	private RoadmapItemResponse toResponse(RoadmapItem item) {
+
+		return new RoadmapItemResponse(
+				item.getId(),
+				item.getStartsAt(),
+				item.getEndsAt(),
+				item.getTitle(),
+				item.getAmount(),
+				item.getSortOrder());
+	}
+
+	private void requireActiveMember(ShioriDay day, UUID callerId) {
+
+		Shiori shiori = shioriRepository.findById(day.getShioriId())
+				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
+
+		ShioriMember member = shioriMemberRepository
+				.findByShioriIdAndUserId(shiori.getId(), callerId)
+				.orElseThrow(() -> new ForbiddenException("このしおりのメンバーではありません"));
+
+		if (!"active".equals(member.getStatus())) {
+			throw new ForbiddenException("このしおりのメンバーではありません");
+		}
 	}
 
 	private Shiori requireEditableMember(ShioriDay day, UUID callerId) {
