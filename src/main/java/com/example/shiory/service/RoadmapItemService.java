@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.shiory.constant.CommentTargetType;
 import com.example.shiory.dto.RoadmapItemCreateRequest;
 import com.example.shiory.dto.RoadmapItemResponse;
 import com.example.shiory.dto.RoadmapItemUpdateRequest;
@@ -17,6 +18,7 @@ import com.example.shiory.entity.ShioriMember;
 import com.example.shiory.exception.BadRequestException;
 import com.example.shiory.exception.ForbiddenException;
 import com.example.shiory.exception.ResourceNotFoundException;
+import com.example.shiory.repository.CommentRepository;
 import com.example.shiory.repository.RoadmapItemRepository;
 import com.example.shiory.repository.ShioriDayRepository;
 import com.example.shiory.repository.ShioriMemberRepository;
@@ -32,6 +34,7 @@ public class RoadmapItemService {
 	private final ShioriDayRepository shioriDayRepository;
 	private final ShioriRepository shioriRepository;
 	private final ShioriMemberRepository shioriMemberRepository;
+	private final CommentRepository commentRepository;
 
 	public RoadmapItem createRoadmapItem(UUID dayId, UUID callerId, RoadmapItemCreateRequest request) {
 
@@ -100,6 +103,7 @@ public class RoadmapItemService {
 		roadmapItemRepository.save(item);
 	}
 
+	@Transactional
 	public void deleteRoadmapItem(UUID itemId, UUID callerId) {
 
 		RoadmapItem item = roadmapItemRepository.findById(itemId)
@@ -109,6 +113,10 @@ public class RoadmapItemService {
 				.orElseThrow(() -> new ResourceNotFoundException("日次ページが見つかりません"));
 
 		requireEditableMember(day, callerId);
+
+		commentRepository.deleteByTargetTypeAndTargetId(
+				CommentTargetType.ROADMAP_ITEM,
+				itemId);
 
 		roadmapItemRepository.delete(item);
 	}
