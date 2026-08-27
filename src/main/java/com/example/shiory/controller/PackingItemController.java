@@ -1,11 +1,13 @@
 package com.example.shiory.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.shiory.dto.PackingItemCreateRequest;
+import com.example.shiory.dto.PackingItemResponse;
 import com.example.shiory.entity.PackingItem;
 import com.example.shiory.service.PackingItemService;
 
@@ -37,6 +40,17 @@ public class PackingItemController {
 				request);
 
 		return ResponseEntity.status(HttpStatus.CREATED).body(item);
+	}
+
+	@GetMapping("/shioris/{shioriId}/packing-items")
+	public ResponseEntity<List<PackingItemResponse>> getPackingItems(
+			@PathVariable UUID shioriId) {
+
+		List<PackingItemResponse> items = packingItemService.getPackingItems(
+				shioriId,
+				currentUserId());
+
+		return ResponseEntity.ok(items);
 	}
 
 	@PostMapping("/packing-items/{itemId}/checks")
