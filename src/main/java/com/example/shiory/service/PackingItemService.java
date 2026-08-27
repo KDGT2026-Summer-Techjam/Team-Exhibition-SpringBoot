@@ -1,5 +1,6 @@
 package com.example.shiory.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -7,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.constant.ShioriMemberStatus;
 import com.example.shiory.dto.PackingItemCreateRequest;
+import com.example.shiory.dto.PackingItemResponse;
 import com.example.shiory.entity.PackingItem;
 import com.example.shiory.entity.PackingItemCheck;
 import com.example.shiory.entity.Shiori;
@@ -46,6 +48,34 @@ public class PackingItemService {
 
 		return packingItemRepository.save(item);
 	}
+
+	public List<PackingItemResponse> getPackingItems(
+			UUID shioriId,
+			UUID callerId) {
+
+		requireActiveMember(shioriId, callerId);
+
+		List<PackingItem> items =
+				packingItemRepository.findByShioriIdOrderByCreatedAtAsc(shioriId);
+
+		return items.stream()
+				.map(item -> {
+
+					long checkedCount =
+							packingItemCheckRepository.countByPackingItemId(item.getId());
+
+					boolean checkedByMe =
+							packingItemCheckRepository.existsByPackingItemIdAndUserId(item.getId(),callerId);
+
+					return new PackingItemResponse(
+							item.getId(),
+							item.getName(),
+							item.getRequiredCount(),
+							checkedCount,
+							checkedByMe);
+				})
+				.toList();
+			}
 
 	private Shiori requireEditableMember(UUID shioriId, UUID callerId) {
 
