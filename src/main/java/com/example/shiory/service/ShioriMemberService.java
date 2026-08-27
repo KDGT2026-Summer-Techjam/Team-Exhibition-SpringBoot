@@ -1,19 +1,23 @@
 package com.example.shiory.service;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.constant.ShioriMemberStatus;
+import com.example.shiory.dto.ShioriMemberResponse;
 import com.example.shiory.entity.Shiori;
 import com.example.shiory.entity.ShioriMember;
+import com.example.shiory.entity.User;
 import com.example.shiory.exception.BadRequestException;
 import com.example.shiory.exception.ForbiddenException;
 import com.example.shiory.exception.ResourceNotFoundException;
 import com.example.shiory.repository.ShioriMemberRepository;
 import com.example.shiory.repository.ShioriRepository;
+import com.example.shiory.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +27,7 @@ public class ShioriMemberService {
 
 	private final ShioriMemberRepository shioriMemberRepository;
 	private final ShioriRepository shioriRepository;
+	private final UserRepository userRepository;
 
 	@Transactional
 	public void leave(UUID shioriId, UUID userId) {
@@ -74,5 +79,36 @@ public class ShioriMemberService {
 		member.setLeftAt(OffsetDateTime.now());
 
 		shioriMemberRepository.save(member);
+	}
+
+	@Transactional(readOnly = true)
+	public List<ShioriMemberResponse> getMembers(UUID shioriId, UUID callerId) {
+
+		shioriRepository.findById(shioriId)
+				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
+
+		ShioriMember caller = shioriMemberRepository
+				.findByShioriIdAndUserId(shioriId, callerId)
+				.orElseThrow(() -> new ForbiddenException("このしおりのメンバーではありません"));
+
+		if (!ShioriMemberStatus.ACTIVE.equals(caller.getStatus())) {
+			throw new ForbiddenException("このしおりのメンバーではありません");
+		}
+
+		return shioriMemberRepository
+				.findByShioriIdAndStatus(shioriId, ShioriMemberStatus.ACTIVE)
+				.stream()
+				.map(member -> {
+
+					User user = userRepository.findById(member.getUserId())
+							.orElseThrow(() -> new ResourceNotFoundException("ユーザーが見つかりません"));
+
+					return new ShioriMemberResponse(
+							member.getUserId(),
+							user.getUsername(),
+							member.getRole(),
+							member.getJoinedAt());
+				})
+				.toList();
 	}
 }

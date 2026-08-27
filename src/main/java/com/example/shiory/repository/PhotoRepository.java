@@ -13,4 +13,6 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
 	Optional<Photo> findByDayIdAndUserId(UUID dayId, UUID userId);
 
 	List<Photo> findByDayId(UUID dayId);
+
+	List<Photo> findByShioriIdAndDeletedFalseOrderByCreatedAtAsc(UUID shioriId);
 }

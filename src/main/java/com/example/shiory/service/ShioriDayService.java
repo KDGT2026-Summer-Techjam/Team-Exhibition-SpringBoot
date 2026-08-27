@@ -1,5 +1,6 @@
 package com.example.shiory.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -8,7 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.constant.CommentTargetType;
+import com.example.shiory.constant.ShioriMemberStatus;
 import com.example.shiory.dto.ShioriDayInsertRequest;
+import com.example.shiory.dto.ShioriDayResponse;
 import com.example.shiory.dto.ShioriDayUpdateRequest;
 import com.example.shiory.entity.Photo;
 import com.example.shiory.entity.RoadmapItem;
@@ -198,5 +201,46 @@ public class ShioriDayService {
               }
 
               shioriDayRepository.save(day);
+      }
+
+      @Transactional(readOnly = true)
+      public List<ShioriDayResponse> getDays(UUID shioriId, UUID callerId) {
+
+              shioriRepository.findById(shioriId)
+                              .orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
+
+              ShioriMember caller = shioriMemberRepository
+                              .findByShioriIdAndUserId(shioriId, callerId)
+                              .orElseThrow(() -> new ForbiddenException("このしおりのメンバーではありません"));
+
+              if (!ShioriMemberStatus.ACTIVE.equals(caller.getStatus())) {
+                      throw new ForbiddenException("このしおりのメンバーではありません");
+              }
+
+              return shioriDayRepository.findByShioriIdOrderByDayNumberAsc(shioriId)
+                              .stream()
+                              .map(day -> {
+
+                                      BigDecimal estimatedCost = day.getEstimatedCost();
+
+                                      if (estimatedCost == null) {
+
+                                              estimatedCost = roadmapItemRepository.findByDayId(day.getId())
+                                                              .stream()
+                                                              .map(RoadmapItem::getAmount)
+                                                              .filter(amount -> amount != null)
+                                                              .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                      }
+
+                                      return new ShioriDayResponse(
+                                                      day.getId(),
+                                                      day.getTripDate(),
+                                                      day.getDayNumber(),
+                                                      day.getTitle(),
+                                                      day.getNotes(),
+                                                      estimatedCost,
+                                                      day.getRepresentativePhotoId());
+                              })
+                              .toList();
       }
 }

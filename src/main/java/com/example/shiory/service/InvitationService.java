@@ -1,12 +1,15 @@
 package com.example.shiory.service;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.shiory.dto.InvitationCreateRequest;
+import com.example.shiory.dto.InvitationSummaryResponse;
 import com.example.shiory.entity.Invitation;
 import com.example.shiory.entity.Shiori;
 import com.example.shiory.entity.ShioriMember;
@@ -84,5 +87,26 @@ public class InvitationService {
 		member.setPasswordVerifiedAt(now);
 
 		shioriMemberRepository.save(member);
+	}
+
+	@Transactional(readOnly = true)
+	public List<InvitationSummaryResponse> getInvitations(UUID shioriId, UUID callerId) {
+
+		Shiori shiori = shioriRepository.findById(shioriId)
+				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
+
+		if (!shiori.getOwnerId().equals(callerId)) {
+			throw new ForbiddenException("招待一覧の閲覧は作成者のみ行えます");
+		}
+
+		return invitationRepository.findByShioriIdOrderByCreatedAtAsc(shioriId)
+				.stream()
+				.map(invitation -> new InvitationSummaryResponse(
+						invitation.getId(),
+						invitation.getInviteeEmail(),
+						invitation.getStatus(),
+						invitation.getCreatedAt(),
+						invitation.getAcceptedAt()))
+				.toList();
 	}
 }

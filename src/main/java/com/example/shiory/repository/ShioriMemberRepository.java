@@ -1,5 +1,6 @@
 package com.example.shiory.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,5 +24,9 @@ public interface ShioriMemberRepository extends JpaRepository<ShioriMember, UUID
 			String status,
 			UUID userId
 	);
+
+	List<ShioriMember> findByShioriIdAndStatus(UUID shioriId, String status);
+
+	List<ShioriMember> findByUserIdAndStatus(UUID userId, String status);
 
 }
