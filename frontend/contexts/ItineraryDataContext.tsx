@@ -45,6 +45,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -121,6 +122,11 @@ export function ItineraryDataProvider({
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  /** ローカルIDの行はキー入力のたびに setRoadmapItems/setPackingItems が呼ばれるため、
+   * 作成APIが完了する前に次のキー入力が来ても二重に POST しないよう進行中の作成を記録する */
+  const pendingRoadmapCreates = useRef<Set<string>>(new Set());
+  const pendingPackingCreates = useRef<Set<string>>(new Set());
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -253,17 +259,31 @@ export function ItineraryDataProvider({
       for (const item of nextItems) {
         if (item.id.startsWith(LOCAL_ROADMAP_PREFIX)) {
           if (!item.title.trim()) continue;
-          const created = await createRoadmapItem(item.dayId, {
-            startsAt: item.startsAt,
-            endsAt: item.endsAt,
-            title: item.title,
-            amount: item.amount,
-          });
-          patchItinerary({
-            roadmapItems: nextItems.map((row) =>
-              row.id === item.id ? created : row,
-            ),
-          });
+          // 作成APIが完了する前の次キー入力での二重POSTを防ぐ
+          if (pendingRoadmapCreates.current.has(item.id)) continue;
+          const localId = item.id;
+          pendingRoadmapCreates.current.add(localId);
+          try {
+            const created = await createRoadmapItem(item.dayId, {
+              startsAt: item.startsAt,
+              endsAt: item.endsAt,
+              title: item.title,
+              amount: item.amount,
+            });
+            // 作成中に入力が進んでいる場合があるため、最新state上のidだけ差し替える
+            setItinerary((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    roadmapItems: prev.roadmapItems.map((row) =>
+                      row.id === localId ? { ...row, id: created.id } : row,
+                    ),
+                  }
+                : prev,
+            );
+          } finally {
+            pendingRoadmapCreates.current.delete(localId);
+          }
           continue;
         }
         const prev = prevById.get(item.id);
@@ -304,16 +324,30 @@ export function ItineraryDataProvider({
       for (const item of nextItems) {
         if (item.id.startsWith(LOCAL_PACKING_PREFIX)) {
           if (!item.label.trim()) continue;
-          const created = await createPackingItem(
-            shioriId,
-            item.label,
-            item.requiredCount,
-          );
-          patchItinerary({
-            packingItems: nextItems.map((row) =>
-              row.id === item.id ? created : row,
-            ),
-          });
+          // 作成APIが完了する前の次キー入力での二重POSTを防ぐ
+          if (pendingPackingCreates.current.has(item.id)) continue;
+          const localId = item.id;
+          pendingPackingCreates.current.add(localId);
+          try {
+            const created = await createPackingItem(
+              shioriId,
+              item.label,
+              item.requiredCount,
+            );
+            // 作成中に入力が進んでいる場合があるため、最新state上のidだけ差し替える
+            setItinerary((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    packingItems: prev.packingItems.map((row) =>
+                      row.id === localId ? { ...row, id: created.id } : row,
+                    ),
+                  }
+                : prev,
+            );
+          } finally {
+            pendingPackingCreates.current.delete(localId);
+          }
           continue;
         }
         const prev = prevById.get(item.id);
