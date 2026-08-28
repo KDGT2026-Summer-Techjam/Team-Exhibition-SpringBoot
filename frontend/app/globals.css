@@ -1,0 +1,750 @@
+@import "tailwindcss";
+
+:root {
+  /* ステージ（机の上） */
+  --color-stage: #1a1814;
+  --color-on-stage: #f5f0e6;
+  --color-on-stage-muted: #a89f90;
+  /* しおり紙面（真っ白＋罫線） */
+  --color-paper: #ffffff;
+  --color-paper-deep: #f5f5f5;
+  --color-line: #e0d8cc;
+  --color-margin: #e8b4b4;
+  --color-ink: #3d3832;
+  --color-ink-muted: #7a7268;
+  --color-accent: #8b7355;
+  --color-accent-hover: #6f5a42;
+  --color-danger: #b85c5c;
+  /* コルク背表紙 */
+  --color-cork: #c4a574;
+  --color-cork-deep: #9a7a4f;
+  --color-cork-speck: #6e5538;
+  /* 付箋シート（ダンボール寄りのクラフト） */
+  --sticky-bg: #c9a66b;
+  --sticky-ink: #3d3228;
+  --sticky-ink-muted: #6e5a45;
+  --line-height: 28px;
+  /* 開いたしおり紙面の基準サイズ（中央配置・これ以上は広げない） */
+  --notebook-max-width: 1280px;
+  --notebook-height: 860px;
+  --motion-fast: 180ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --line-height: 24px;
+  }
+}
+
+@theme inline {
+  --color-stage: var(--color-stage);
+  --color-on-stage: var(--color-on-stage);
+  --color-on-stage-muted: var(--color-on-stage-muted);
+  --color-paper: var(--color-paper);
+  --color-paper-deep: var(--color-paper-deep);
+  --color-line: var(--color-line);
+  --color-margin: var(--color-margin);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-danger: var(--color-danger);
+  --color-cork: var(--color-cork);
+  --color-cork-deep: var(--color-cork-deep);
+  --color-cork-speck: var(--color-cork-speck);
+  --font-sans: var(--font-zen-maru), sans-serif;
+  --font-heading: var(--font-zen-maru), sans-serif;
+  --font-noto: var(--font-noto-sans), "Noto Sans JP", sans-serif;
+}
+
+.font-heading {
+  font-family: var(--font-zen-maru), sans-serif;
+}
+
+/* コメントUI専用（しおり本体の手書き感と切り分ける） */
+.font-noto {
+  font-family: var(--font-noto-sans), "Noto Sans JP", sans-serif;
+}
+
+.comment-box-face {
+  /* 付箋の --color-paper 上書きやぼかしの濁りを避ける */
+  background-color: #ffffff;
+  color: var(--color-ink);
+  z-index: 1;
+}
+
+.comment-box-halo {
+  z-index: 0;
+  background: rgb(0 0 0 / 0.22);
+  filter: blur(7px);
+}
+
+/* 自分コメント編集: 既定の input 枠・インライン隙間を外し、p と同じ箱にする */
+.comment-edit-input {
+  display: block;
+  min-width: 4em;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  appearance: none;
+  background: transparent;
+  field-sizing: content;
+  line-height: 1.625;
+}
+
+/* 吹き出ししっぽ。回転ひし形の2辺だけ枠を出して本体に接続する */
+.comment-box-tail {
+  position: absolute;
+  z-index: 0;
+  bottom: 0.5rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  pointer-events: none;
+  background-color: #ffffff;
+  transform: rotate(45deg);
+}
+.comment-box-tail-left {
+  left: -6px;
+  border-bottom: 1px solid #000;
+  border-left: 1px solid #000;
+}
+.comment-box-tail-right {
+  right: -6px;
+  border-top: 1px solid #000;
+  border-right: 1px solid #000;
+}
+/* 本体の縦枠がしっぽの根元に残らないよう白で隠す */
+.comment-box-tail-seam {
+  position: absolute;
+  z-index: 2;
+  bottom: 0.4rem;
+  width: 4px;
+  height: 14px;
+  pointer-events: none;
+  background-color: #ffffff;
+}
+.comment-box-tail-seam-left {
+  left: 0;
+}
+.comment-box-tail-seam-right {
+  right: 0;
+}
+
+/* 入力タブ用（単一ボックス）。relative はぼかし疑似要素の基準だけに使う。
+   未レイヤーCSSのため Tailwind の fixed/absolute より優先され、
+   bottom/left と同居させると画面外へ押し出される。画面配置は親で行う。 */
+.comment-box-blur {
+  position: relative;
+  background-color: #ffffff !important;
+  box-shadow: none;
+}
+
+.comment-box-blur::before {
+  content: "";
+  position: absolute;
+  inset: -0.5rem;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgb(0 0 0 / 0.2);
+  filter: blur(7px);
+  pointer-events: none;
+}
+
+/* ホバー操作の共通モーション（拡大ポップ。浮かせない） */
+.hover-lift {
+  transform-origin: center;
+  transition:
+    transform var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease);
+}
+.hover-lift:hover {
+  transform: scale(1.1);
+  border-color: var(--color-accent);
+}
+
+.hover-reveal {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+.group:hover .hover-reveal,
+.group:focus-within .hover-reveal,
+.hover-reveal-open,
+.hover-reveal-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* コメント吹き出しの出現アニメ */
+@keyframes comment-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.comment-bubble-enter {
+  animation: comment-bubble-in var(--motion-fast) var(--motion-ease) both;
+}
+
+/* 要素周囲に散らすときのポンッとした出現 */
+@keyframes comment-bubble-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.comment-bubble-pop {
+  animation: comment-bubble-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+body {
+  background-color: var(--color-stage);
+  color: var(--color-on-stage);
+  font-family: var(--font-zen-maru), sans-serif;
+  min-height: 100vh;
+}
+
+/* 開いたしおりの裏に敷くコルク調ハードカバー */
+.cork-cover {
+  background-color: var(--color-cork);
+  background-image:
+    radial-gradient(
+      circle at 18% 22%,
+      color-mix(in srgb, var(--color-cork-speck) 35%, transparent) 0 1.1px,
+      transparent 1.4px
+    ),
+    radial-gradient(
+      circle at 72% 38%,
+      color-mix(in srgb, var(--color-cork-deep) 55%, transparent) 0 1.4px,
+      transparent 1.8px
+    ),
+    radial-gradient(
+      circle at 41% 71%,
+      color-mix(in srgb, var(--color-cork-speck) 40%, transparent) 0 1px,
+      transparent 1.3px
+    ),
+    radial-gradient(
+      circle at 88% 82%,
+      color-mix(in srgb, var(--color-cork-deep) 45%, transparent) 0 1.2px,
+      transparent 1.6px
+    ),
+    radial-gradient(
+      circle at 55% 14%,
+      color-mix(in srgb, white 22%, transparent) 0 1px,
+      transparent 1.3px
+    ),
+    repeating-linear-gradient(
+      118deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--color-cork-deep) 12%, transparent) 7px 8px
+    ),
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, white 14%, var(--color-cork)) 0%,
+      var(--color-cork) 42%,
+      var(--color-cork-deep) 100%
+    );
+  background-size:
+    28px 28px,
+    34px 34px,
+    22px 22px,
+    30px 30px,
+    26px 26px,
+    auto,
+    auto;
+  border-radius: 3px;
+  box-shadow:
+    0 10px 28px rgb(0 0 0 / 0.45),
+    0 2px 6px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    inset 0 -2px 4px rgb(0 0 0 / 0.18);
+}
+
+/* 一覧の閉じた本用: より密なコルク粒＋面取り */
+.cork-cover-book {
+  background-color: var(--color-cork);
+  background-image:
+    radial-gradient(
+      ellipse 80% 60% at 30% 25%,
+      color-mix(in srgb, white 16%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 75% 78%,
+      color-mix(in srgb, var(--color-cork-deep) 35%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 12% 18%,
+      color-mix(in srgb, var(--color-cork-speck) 55%, transparent) 0 1.2px,
+      transparent 1.6px
+    ),
+    radial-gradient(
+      circle at 28% 42%,
+      color-mix(in srgb, var(--color-cork-deep) 60%, transparent) 0 1.8px,
+      transparent 2.2px
+    ),
+    radial-gradient(
+      circle at 48% 22%,
+      color-mix(in srgb, var(--color-cork-speck) 45%, transparent) 0 0.9px,
+      transparent 1.2px
+    ),
+    radial-gradient(
+      circle at 63% 55%,
+      color-mix(in srgb, var(--color-cork-deep) 50%, transparent) 0 2.2px,
+      transparent 2.7px
+    ),
+    radial-gradient(
+      circle at 81% 33%,
+      color-mix(in srgb, var(--color-cork-speck) 40%, transparent) 0 1.1px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 19% 72%,
+      color-mix(in srgb, white 28%, transparent) 0 1px,
+      transparent 1.3px
+    ),
+    radial-gradient(
+      circle at 91% 68%,
+      color-mix(in srgb, var(--color-cork-speck) 48%, transparent) 0 1.5px,
+      transparent 1.9px
+    ),
+    radial-gradient(
+      circle at 55% 88%,
+      color-mix(in srgb, var(--color-cork-deep) 42%, transparent) 0 1.3px,
+      transparent 1.7px
+    ),
+    repeating-linear-gradient(
+      112deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--color-cork-deep) 10%, transparent) 5px 6px
+    ),
+    repeating-linear-gradient(
+      28deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--color-cork-speck) 8%, transparent) 9px 10px
+    ),
+    linear-gradient(
+      148deg,
+      color-mix(in srgb, white 18%, var(--color-cork)) 0%,
+      var(--color-cork) 38%,
+      var(--color-cork-deep) 100%
+    );
+  background-size:
+    auto,
+    auto,
+    22px 22px,
+    31px 31px,
+    17px 17px,
+    36px 36px,
+    24px 24px,
+    19px 19px,
+    28px 28px,
+    26px 26px,
+    auto,
+    auto,
+    auto;
+  border-radius: 4px;
+  /* 落ち影は中紙側へ。表紙の影が紙を潰さないようインセットだけ残す */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    inset 0 -3px 6px rgb(0 0 0 / 0.22),
+    inset 1px 0 0 rgb(255 255 255 / 0.12),
+    inset -2px 0 5px rgb(0 0 0 / 0.22);
+}
+
+/* 閉じたしおり: 中紙はほぼ同位置に重ね、右下へわずかに段差だけ出す */
+.notebook-closed {
+  --sheet-0-x: 10px;
+  --sheet-0-y: 8px;
+  --sheet-1-x: 7px;
+  --sheet-1-y: 6px;
+  --sheet-2-x: 4px;
+  --sheet-2-y: 3px;
+  --sheet-3-x: 2px;
+  --sheet-3-y: 2px;
+}
+
+@media (max-width: 640px) {
+  .notebook-closed {
+    --sheet-0-x: 8px;
+    --sheet-0-y: 7px;
+    --sheet-1-x: 6px;
+    --sheet-1-y: 5px;
+    --sheet-2-x: 3px;
+    --sheet-2-y: 3px;
+    --sheet-3-x: 1px;
+    --sheet-3-y: 1px;
+  }
+}
+
+.notebook-closed-body {
+  aspect-ratio: 3 / 4;
+  margin-right: var(--sheet-0-x);
+  margin-bottom: var(--sheet-0-y);
+}
+
+/* 表紙の下から覗く中紙。薄い段差で枚数だけ見せる */
+.notebook-paper-sheet {
+  border-radius: 1px 2px 2px 1px;
+  transition: transform var(--motion-fast) var(--motion-ease);
+}
+
+.notebook-paper-sheet[data-layer="0"] {
+  z-index: 0;
+  background-color: #e4dac8;
+  transform: translate(var(--sheet-0-x), var(--sheet-0-y));
+  box-shadow:
+    4px 10px 22px rgb(0 0 0 / 0.38),
+    1px 3px 8px rgb(0 0 0 / 0.22),
+    1px 0 0 #cfc3ad,
+    0 1px 0 #cfc3ad;
+}
+
+.notebook-paper-sheet[data-layer="1"] {
+  z-index: 1;
+  background-color: #eee6d6;
+  transform: translate(var(--sheet-1-x), var(--sheet-1-y));
+  box-shadow:
+    1px 0 0 #d8cdb8,
+    0 1px 0 #d8cdb8;
+}
+
+.notebook-paper-sheet[data-layer="2"] {
+  z-index: 2;
+  background-color: #f6f0e4;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 9px,
+    color-mix(in srgb, var(--color-line) 50%, transparent) 9px 10px
+  );
+  transform: translate(var(--sheet-2-x), var(--sheet-2-y));
+  box-shadow:
+    1px 0 0 #e2d6c2,
+    0 1px 0 #e2d6c2;
+}
+
+.notebook-paper-sheet[data-layer="3"] {
+  z-index: 3;
+  background-color: #fffdf8;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 8px,
+    color-mix(in srgb, var(--color-line) 60%, transparent) 8px 9px
+  );
+  transform: translate(var(--sheet-3-x), var(--sheet-3-y));
+  box-shadow:
+    1px 0 0 #ece3d2,
+    0 1px 0 #ece3d2;
+}
+
+.group:hover .notebook-paper-sheet[data-layer="0"] {
+  transform: translate(
+    calc(var(--sheet-0-x) + 2px),
+    calc(var(--sheet-0-y) + 1px)
+  );
+}
+
+.group:hover .notebook-paper-sheet[data-layer="1"] {
+  transform: translate(
+    calc(var(--sheet-1-x) + 1px),
+    calc(var(--sheet-1-y) + 1px)
+  );
+}
+
+/* しおり紙面: ベージュ・直角・薄い横罫 */
+.shiori-surface {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  border-radius: 0;
+  box-shadow: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--line-height) - 1px),
+    color-mix(in srgb, var(--color-line) 45%, transparent)
+      calc(var(--line-height) - 1px),
+    color-mix(in srgb, var(--color-line) 45%, transparent) var(--line-height)
+  );
+}
+
+/* 紙面内の薄い横罫 */
+.notebook-bg {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--line-height) - 1px),
+    color-mix(in srgb, var(--color-line) 45%, transparent)
+      calc(var(--line-height) - 1px),
+    color-mix(in srgb, var(--color-line) 45%, transparent) var(--line-height)
+  );
+}
+
+/* 入力エリア用の横罫 */
+.notebook-lined {
+  background-color: transparent;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(var(--line-height) - 1px),
+    color-mix(in srgb, var(--color-line) 55%, transparent)
+      calc(var(--line-height) - 1px),
+    color-mix(in srgb, var(--color-line) 55%, transparent) var(--line-height)
+  );
+  line-height: var(--line-height);
+}
+
+/* 日ごとページ用（左マージン線のみ。横罫は shiori-surface に任せる） */
+.notebook-page {
+  background-color: transparent;
+  background-image: linear-gradient(
+    to right,
+    transparent 47px,
+    color-mix(in srgb, var(--color-margin) 70%, transparent) 47px,
+    color-mix(in srgb, var(--color-margin) 70%, transparent) 48px,
+    transparent 48px
+  );
+  padding-left: 56px;
+}
+
+@media (max-width: 640px) {
+  .notebook-page {
+    background-image: linear-gradient(
+      to right,
+      transparent 35px,
+      color-mix(in srgb, var(--color-margin) 70%, transparent) 35px,
+      color-mix(in srgb, var(--color-margin) 70%, transparent) 36px,
+      transparent 36px
+    );
+    padding-left: 44px;
+  }
+}
+
+/* 手書き風セクション見出し（uppercase を使わない） */
+.section-hand-label {
+  font-family: var(--font-zen-maru), sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-ink);
+}
+
+/* 予定タイムラインの縦点線 */
+.timeline-rail {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-ink) 35%, transparent) 0,
+    color-mix(in srgb, var(--color-ink) 35%, transparent) 3px,
+    transparent 3px,
+    transparent 8px
+  );
+}
+
+/* ポラロイド写真のごく薄い影（紙の上だけ） */
+.polaroid-shadow {
+  box-shadow:
+    1px 2px 0 color-mix(in srgb, var(--color-ink) 8%, transparent),
+    0 8px 18px color-mix(in srgb, var(--color-ink) 12%, transparent);
+}
+
+/* 紙の罫線と同じ 1 マス＝ --line-height。border 内側から切り始める */
+.ring-binder-column,
+.ring-hole-column {
+  display: grid;
+  grid-auto-rows: var(--line-height);
+  grid-template-columns: 1fr;
+  align-items: center;
+  justify-items: center;
+  padding-block: 1px;
+  overflow: hidden;
+}
+
+/* 上から見たワイヤー1組（横線が2本）。行の中央に置く */
+.ring-binder {
+  display: flex;
+  width: 40px;
+  height: 8px;
+  flex-direction: column;
+  justify-content: space-between;
+  line-height: 0;
+  min-height: 0;
+}
+
+/* ノートを上から見たときのワイヤー。左右の紙を横に繋ぐ */
+.ring-binder-wire {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: #2a2a2a;
+  box-shadow: 0 0.5px 0.5px rgba(0, 0, 0, 0.25);
+}
+
+/* ワイヤーより大きいスロット。穴が線の上下からはみ出して「通っている」ように見せる */
+.ring-hole-slot {
+  display: flex;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  min-height: 0;
+}
+
+/* ワイヤーが通る四角いパンチ穴（奥のコルクにくり抜いた見た目） */
+.ring-hole {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background:
+    radial-gradient(
+      circle at 30% 35%,
+      color-mix(in srgb, var(--color-cork-speck) 40%, transparent) 0 1px,
+      transparent 1.2px
+    ),
+    var(--color-cork-deep);
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.55),
+    inset 0 0 0 1px rgb(0 0 0 / 0.22);
+}
+
+/* マスキングテープ（半透明のクリアテープ寄り） */
+.washi-tape {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, white 78%, transparent),
+    color-mix(in srgb, white 55%, transparent) 50%,
+    color-mix(in srgb, white 70%, transparent)
+  );
+  border-block: 1px solid color-mix(in srgb, white 45%, transparent);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 8%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, white 25%, transparent);
+}
+
+/* 付箋シート: 子コンポーネントの ink トークンを付箋色に合わせる */
+.sticky-note-sheet {
+  background-color: var(--sticky-bg);
+  color: var(--sticky-ink);
+  --color-ink: var(--sticky-ink);
+  --color-ink-muted: var(--sticky-ink-muted);
+  --color-paper: var(--sticky-bg);
+  --color-paper-deep: color-mix(in srgb, var(--sticky-ink) 8%, var(--sticky-bg));
+  --color-line: color-mix(in srgb, var(--sticky-ink) 22%, var(--sticky-bg));
+  box-shadow:
+    1px 2px 0 color-mix(in srgb, black 12%, transparent),
+    2px 6px 14px color-mix(in srgb, black 16%, transparent);
+}
+
+/* 5色レパートリー（日ページでローテーション） */
+.sticky-note-sheet[data-variant="yellow"] {
+  --sticky-bg: #f6e58d;
+  --sticky-ink: #3d3832;
+  --sticky-ink-muted: #6b6358;
+}
+
+.sticky-note-sheet[data-variant="pink"] {
+  --sticky-bg: #f5c6d0;
+  --sticky-ink: #3d3832;
+  --sticky-ink-muted: #7a5a62;
+}
+
+.sticky-note-sheet[data-variant="orange"] {
+  --sticky-bg: #f4c07a;
+  --sticky-ink: #3d3228;
+  --sticky-ink-muted: #7a6450;
+}
+
+.sticky-note-sheet[data-variant="sky"] {
+  --sticky-bg: #b7d4f0;
+  --sticky-ink: #2c3a4a;
+  --sticky-ink-muted: #5a6b7a;
+}
+
+.sticky-note-sheet[data-variant="kraft"] {
+  --sticky-bg: #c9a66b;
+  --sticky-ink: #3d3228;
+  --sticky-ink-muted: #6e5a45;
+}
+
+/* 持ち物行の共通スロット（未達・付箋達成で同じ余白） */
+.packing-strip-slot {
+  padding: 0.375rem 0.625rem 0.375rem 0.75rem; /* py-1.5 pr-2.5 pl-3 */
+  box-sizing: border-box;
+}
+
+/* 持ち物達成用の細長い短冊: 左端を接着テープ帯のように濃くする */
+.sticky-note-sheet[data-size="strip"] {
+  /* 左 ~0.7rem をインク混じりの濃色、そこから本体色へ */
+  background-image: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--sticky-ink) 28%, var(--sticky-bg)) 0,
+    color-mix(in srgb, var(--sticky-ink) 22%, var(--sticky-bg)) 0.55rem,
+    color-mix(in srgb, var(--sticky-ink) 8%, var(--sticky-bg)) 0.85rem,
+    var(--sticky-bg) 1.1rem
+  );
+  box-shadow:
+    1px 1px 0 color-mix(in srgb, black 10%, transparent),
+    1px 3px 8px color-mix(in srgb, black 12%, transparent);
+}
+
+.sticky-note-sheet .timeline-rail {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--sticky-ink) 45%, transparent) 0,
+    color-mix(in srgb, var(--sticky-ink) 45%, transparent) 3px,
+    transparent 3px,
+    transparent 8px
+  );
+}
+
+/* しおり本文エリア: 紙内の余白（画面幅で大きく揺らさない） */
+.shiori-content {
+  padding-inline: 1.5rem;
+  padding-block: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .shiori-content {
+    padding-inline: 2.25rem;
+    padding-block: 1.75rem;
+  }
+}
+
+/* 見開きでは本文を紙の高さいっぱいにし、右ページの中央配置が効くようにする */
+@media (min-width: 1024px) {
+  .shiori-surface > .shiori-content {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* 見出しのない右ページ: 予定／写真・備考を紙面の中央に置く */
+  .shiori-center-body {
+    position: relative;
+    min-height: 100%;
+  }
+
+  .shiori-center-body > * {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}

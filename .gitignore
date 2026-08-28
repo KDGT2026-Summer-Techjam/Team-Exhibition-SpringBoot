@@ -1,0 +1,5 @@
+.env
+.env.local
+.env.*.local
+target/
+.mvn/wrapper/maven-wrapper.jar
