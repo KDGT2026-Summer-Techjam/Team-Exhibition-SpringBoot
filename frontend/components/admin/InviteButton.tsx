@@ -5,6 +5,41 @@ import { useItineraryData } from "@/contexts/ItineraryDataContext";
 import { ApiError } from "@/lib/api/errors";
 import { useState } from "react";
 
+function CopyIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="8.5" y="8.5" width="11" height="11" rx="1.5" />
+      <path d="M5.5 15.5h-1a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v1" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M5 12.5 9.5 17 19 7.5" />
+    </svg>
+  );
+}
+
 /** オーナーが招待URLを発行してクリップボードにコピーするだけのボタン */
 export function InviteButton() {
   const { createInvitationLink } = useItineraryData();
@@ -34,11 +69,12 @@ export function InviteButton() {
       <Button
         type="button"
         variant="secondary"
-        className="shrink-0 px-3 py-1.5 text-xs"
+        className="shrink-0 gap-1.5 px-3 py-1.5 text-xs"
         onClick={handleClick}
         disabled={loading}
       >
-        {loading ? "発行中…" : "招待する"}
+        {status === "copied" ? <CheckIcon /> : <CopyIcon />}
+        {loading ? "発行中…" : "招待URLをコピー"}
       </Button>
       {status === "copied" && (
         <p className="text-xs text-accent">招待リンクをコピーしました</p>
