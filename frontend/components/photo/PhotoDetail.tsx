@@ -17,7 +17,6 @@ type PhotoDetailProps = {
   canManage: boolean;
   onClose: () => void;
   onUpdate: (photo: Photo) => void;
-  onReplaceFile?: (photoId: string, file: File) => void | Promise<void>;
 };
 
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
@@ -31,7 +30,6 @@ export function PhotoDetail({
   canManage,
   onClose,
   onUpdate,
-  onReplaceFile,
 }: PhotoDetailProps) {
   const [comments, setComments] = useState(initialComments);
   const titleId = useId();
@@ -162,24 +160,6 @@ export function PhotoDetail({
           )}
           {canManage && !photo.isDeleted && (
             <div className="mt-3 flex shrink-0 gap-3 text-xs">
-              <label className="cursor-pointer text-accent hover:underline">
-                差し替え
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (onReplaceFile) {
-                      await onReplaceFile(photo.id, file);
-                    } else {
-                      onUpdate({ ...photo, imageUrl: URL.createObjectURL(file) });
-                    }
-                    e.target.value = "";
-                  }}
-                />
-              </label>
               <button
                 type="button"
                 className="text-danger hover:underline"

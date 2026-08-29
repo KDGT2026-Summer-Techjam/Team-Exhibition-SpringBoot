@@ -14,7 +14,6 @@ type PhotoGridProps = {
   canComment: boolean;
   isOwner: boolean;
   onUpdatePhoto: (photo: Photo) => void;
-  onReplaceFile?: (photoId: string, file: File) => void;
 };
 
 export function PhotoGrid({
@@ -25,11 +24,10 @@ export function PhotoGrid({
   canComment,
   isOwner,
   onUpdatePhoto,
-  onReplaceFile,
 }: PhotoGridProps) {
   const [selected, setSelected] = useState<Photo | null>(null);
 
-  // 差し替え・いいね後に詳細モーダルの表示を同期
+  // いいね後に詳細モーダルの表示を同期
   useEffect(() => {
     if (!selected) return;
     const updated = photos.find((p) => p.id === selected.id);
@@ -78,7 +76,6 @@ export function PhotoGrid({
               onUpdatePhoto(photo);
               setSelected(photo.isDeleted ? null : photo);
             }}
-            onReplaceFile={onReplaceFile}
           />
         )}
       </AnimatePresence>

@@ -140,8 +140,7 @@ CREATE TABLE photos (
     image_path    varchar(1024) NOT NULL,
     is_deleted    boolean      NOT NULL DEFAULT false,
     created_at    timestamptz  NOT NULL DEFAULT now(),
-    updated_at    timestamptz  NOT NULL DEFAULT now(),
-    CONSTRAINT photos_day_user_key UNIQUE (day_id, user_id)
+    updated_at    timestamptz  NOT NULL DEFAULT now()
 );
 
 CREATE INDEX photos_shiori_id_idx ON photos (shiori_id);

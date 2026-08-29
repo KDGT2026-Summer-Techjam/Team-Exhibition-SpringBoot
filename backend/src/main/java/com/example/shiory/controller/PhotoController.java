@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,25 +34,6 @@ public class PhotoController {
 
 		return ResponseEntity.ok(
 				photoService.getPhoto(photo.getId(), SecurityUtils.currentUserId()));
-	}
-
-	@PutMapping("/api/photos/{photoId}")
-	public ResponseEntity<PhotoResponse> replacePhoto(
-			@PathVariable UUID photoId,
-			@RequestParam("file") MultipartFile file) {
-
-		photoService.replacePhoto(photoId, SecurityUtils.currentUserId(), file);
-
-		return ResponseEntity.ok(
-				photoService.getPhoto(photoId, SecurityUtils.currentUserId()));
-	}
-
-	@DeleteMapping("/api/shiori-days/{dayId}/photos/me")
-	public ResponseEntity<Void> deletePhotoByDay(@PathVariable UUID dayId) {
-
-		photoService.deletePhotoByDay(dayId, SecurityUtils.currentUserId());
-
-		return ResponseEntity.noContent().build();
 	}
 
 	@DeleteMapping("/api/photos/{photoId}")

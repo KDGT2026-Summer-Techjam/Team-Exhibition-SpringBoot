@@ -15,7 +15,6 @@ import {
   deletePhoto,
   fetchPhotos,
   likePhoto,
-  replacePhoto,
   uploadPhoto,
 } from "@/lib/api/photos";
 import {
@@ -74,7 +73,6 @@ type ItineraryDataValue = {
   patchComment: (id: string, body: string) => Promise<void>;
   removeComment: (id: string) => Promise<void>;
   uploadPhotoForDay: (dayId: string, file: File) => Promise<void>;
-  replacePhotoFile: (photoId: string, file: File) => Promise<void>;
   removePhoto: (photoId: string) => Promise<void>;
   toggleLike: (photoId: string) => Promise<void>;
   saveAdminSettings: (input: {
@@ -98,12 +96,6 @@ const ItineraryDataContext = createContext<ItineraryDataValue | null>(null);
 
 const LOCAL_ROADMAP_PREFIX = "roadmap-local-";
 const LOCAL_PACKING_PREFIX = "pack-local-";
-
-/** Storage の同一 URL 差し替え時にブラウザキャッシュを回避 */
-function cacheBustImageUrl(url: string): string {
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}v=${Date.now()}`;
-}
 
 async function loadRoadmapForDays(days: ShioriDay[]): Promise<RoadmapItem[]> {
   const chunks = await Promise.all(
@@ -435,15 +427,6 @@ export function ItineraryDataProvider({
     setPhotos((prev) => [...prev, photo]);
   }, []);
 
-  const replacePhotoFile = useCallback(async (photoId: string, file: File) => {
-    const photo = await replacePhoto(photoId, file);
-    const refreshed = {
-      ...photo,
-      imageUrl: cacheBustImageUrl(photo.imageUrl),
-    };
-    setPhotos((prev) => prev.map((p) => (p.id === photoId ? refreshed : p)));
-  }, []);
-
   const removePhoto = useCallback(async (photoId: string) => {
     await deletePhoto(photoId);
     setPhotos((prev) =>
@@ -529,7 +512,6 @@ export function ItineraryDataProvider({
       patchComment,
       removeComment,
       uploadPhotoForDay,
-      replacePhotoFile,
       removePhoto,
       toggleLike,
       saveAdminSettings,
@@ -559,7 +541,6 @@ export function ItineraryDataProvider({
       patchComment,
       removeComment,
       uploadPhotoForDay,
-      replacePhotoFile,
       removePhoto,
       toggleLike,
       saveAdminSettings,

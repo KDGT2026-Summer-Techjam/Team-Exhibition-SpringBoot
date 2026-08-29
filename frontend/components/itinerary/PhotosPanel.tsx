@@ -28,7 +28,6 @@ export function PhotosPanel({
   const {
     photos,
     uploadPhotoForDay,
-    replacePhotoFile,
     removePhoto,
     toggleLike,
     itinerary: loaded,
@@ -62,18 +61,6 @@ export function PhotosPanel({
 
   const handleUpload = async (file: File, targetDayId: string) => {
     setUploadError("");
-    const already = photos.some(
-      (p) =>
-        p.userId === currentUserId &&
-        p.dayId === targetDayId &&
-        !p.isDeleted,
-    );
-    if (already) {
-      setUploadError(
-        "同じ日に登録できる写真は1枚です。差し替えは詳細から行えます",
-      );
-      return;
-    }
     try {
       await uploadPhotoForDay(targetDayId, file);
     } catch (err) {
@@ -156,19 +143,6 @@ export function PhotosPanel({
             isOwner={isOwner}
             onUpdatePhoto={(photo) => {
               void handleUpdatePhoto(photo);
-            }}
-            onReplaceFile={async (photoId, file) => {
-              setPhotoError("");
-              try {
-                await replacePhotoFile(photoId, file);
-              } catch (err) {
-                setPhotoError(
-                  err instanceof ApiError
-                    ? err.message
-                    : "写真の差し替えに失敗しました",
-                );
-                throw err;
-              }
             }}
           />
         )}

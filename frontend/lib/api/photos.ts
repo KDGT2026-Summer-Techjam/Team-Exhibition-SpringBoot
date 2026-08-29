@@ -39,24 +39,8 @@ export async function uploadPhoto(dayId: string, file: File): Promise<Photo> {
   return mapPhoto(raw);
 }
 
-export async function replacePhoto(photoId: string, file: File): Promise<Photo> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const raw = await apiRequest<Record<string, unknown>>(
-    `/api/photos/${photoId}`,
-    { method: "PUT", formData },
-  );
-  return mapPhoto(raw);
-}
-
 export async function deletePhoto(photoId: string): Promise<void> {
   await apiRequest<void>(`/api/photos/${photoId}`, { method: "DELETE" });
-}
-
-export async function deleteMyPhotoForDay(dayId: string): Promise<void> {
-  await apiRequest<void>(`/api/shiori-days/${dayId}/photos/me`, {
-    method: "DELETE",
-  });
 }
 
 export async function fetchPhoto(photoId: string): Promise<Photo> {

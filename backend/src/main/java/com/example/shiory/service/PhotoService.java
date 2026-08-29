@@ -61,6 +61,8 @@ public class PhotoService {
 		this.bucket = bucket;
 	}
 
+	private static final long MAX_PHOTOS_PER_DAY_PER_USER = 30;
+
 	public Photo uploadPhoto(UUID dayId, UUID callerId, MultipartFile file) {
 
 		ShioriDay day = shioriDayRepository.findById(dayId)
@@ -72,40 +74,19 @@ public class PhotoService {
 			throw new BadRequestException("写真ファイルが空です");
 		}
 
-		String path = shiori.getId() + "/" + dayId + "/" + callerId + extractExtension(file.getOriginalFilename());
-		String imagePath = storageService.upload(path, file);
-
-		Photo photo = photoRepository
-				.findByDayIdAndUserId(dayId, callerId)
-				.orElseGet(() -> {
-					Photo p = new Photo();
-					p.setShioriId(shiori.getId());
-					p.setDayId(dayId);
-					p.setUserId(callerId);
-					return p;
-				});
-
-		photo.setImagePath(imagePath);
-		photo.setDeleted(false);
-
-		return photoRepository.save(photo);
-	}
-
-	public Photo replacePhoto(UUID photoId, UUID callerId, MultipartFile file) {
-
-		Photo photo = photoRepository.findById(photoId)
-				.orElseThrow(() -> new ResourceNotFoundException("写真が見つかりません"));
-
-		requirePhotoOwnerOrShioriOwner(photo, callerId);
-
-		if (file == null || file.isEmpty()) {
-			throw new BadRequestException("写真ファイルが空です");
+		if (photoRepository.countByDayIdAndUserIdAndDeletedFalse(dayId, callerId)
+				>= MAX_PHOTOS_PER_DAY_PER_USER) {
+			throw new BadRequestException("この日に登録できる写真は" + MAX_PHOTOS_PER_DAY_PER_USER + "枚までです");
 		}
 
-		String path = photo.getShioriId() + "/" + photo.getDayId() + "/"
-				+ callerId + extractExtension(file.getOriginalFilename());
+		String path = shiori.getId() + "/" + dayId + "/" + callerId + "/"
+				+ UUID.randomUUID() + extractExtension(file.getOriginalFilename());
 		String imagePath = storageService.upload(path, file);
 
+		Photo photo = new Photo();
+		photo.setShioriId(shiori.getId());
+		photo.setDayId(dayId);
+		photo.setUserId(callerId);
 		photo.setImagePath(imagePath);
 		photo.setDeleted(false);
 
@@ -121,20 +102,6 @@ public class PhotoService {
 
 		photo.setDeleted(true);
 		photoRepository.save(photo);
-	}
-
-	public void deletePhotoByDay(UUID dayId, UUID callerId) {
-
-		ShioriDay day = shioriDayRepository.findById(dayId)
-				.orElseThrow(() -> new ResourceNotFoundException("日次ページが見つかりません"));
-
-		accessHelper.requireActiveMember(day.getShioriId(), callerId);
-
-		Photo photo = photoRepository
-				.findByDayIdAndUserId(dayId, callerId)
-				.orElseThrow(() -> new ResourceNotFoundException("写真が見つかりません"));
-
-		deletePhoto(photo.getId(), callerId);
 	}
 
 	@Transactional(readOnly = true)
