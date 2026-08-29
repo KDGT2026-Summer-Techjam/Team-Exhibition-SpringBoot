@@ -24,17 +24,11 @@ export async function acceptInvitation(
   });
 }
 
-export async function createInvitation(
-  shioriId: string,
-  inviteeEmail: string,
-  message?: string,
-): Promise<string> {
+/** 招待はURLの共有のみ。受領側はログイン＋しおりのパスワード確認で参加するため、メール入力は不要 */
+export async function createInvitation(shioriId: string): Promise<string> {
   const raw = await apiRequest<{ url: string }>(
     `/api/shioris/${shioriId}/invitations`,
-    {
-      method: "POST",
-      body: { inviteeEmail, message },
-    },
+    { method: "POST", body: {} },
   );
   return raw.url;
 }

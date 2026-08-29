@@ -2,6 +2,7 @@
 
 import { fetchShioriComments, createComment, updateComment, deleteComment } from "@/lib/api/comments";
 import { fetchShioriDays, updateShioriDay } from "@/lib/api/days";
+import { createInvitation } from "@/lib/api/invitations";
 import { fetchMembers, banMember } from "@/lib/api/members";
 import {
   contributePackingItem,
@@ -90,6 +91,7 @@ type ItineraryDataValue = {
   }) => Promise<void>;
   banMemberById: (userId: string) => Promise<void>;
   deleteItinerary: (password: string) => Promise<void>;
+  createInvitationLink: () => Promise<string>;
 };
 
 const ItineraryDataContext = createContext<ItineraryDataValue | null>(null);
@@ -501,6 +503,10 @@ export function ItineraryDataProvider({
     [shioriId],
   );
 
+  const createInvitationLink = useCallback(async () => {
+    return createInvitation(shioriId);
+  }, [shioriId]);
+
   const value = useMemo(
     () => ({
       shioriId,
@@ -530,6 +536,7 @@ export function ItineraryDataProvider({
       savePagePermissions,
       banMemberById,
       deleteItinerary,
+      createInvitationLink,
     }),
     [
       shioriId,
@@ -559,6 +566,7 @@ export function ItineraryDataProvider({
       savePagePermissions,
       banMemberById,
       deleteItinerary,
+      createInvitationLink,
     ],
   );
 

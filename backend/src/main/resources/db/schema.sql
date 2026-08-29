@@ -74,7 +74,7 @@ CREATE TABLE invitations (
     id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     shiori_id          uuid         NOT NULL REFERENCES shioris (id) ON DELETE RESTRICT ON UPDATE CASCADE,
     inviter_id         uuid         NOT NULL REFERENCES users (id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    invitee_email      varchar(255) NOT NULL,
+    invitee_email      varchar(255),
     message            text,
     token              varchar(255) NOT NULL,
     status             varchar(20)  NOT NULL,

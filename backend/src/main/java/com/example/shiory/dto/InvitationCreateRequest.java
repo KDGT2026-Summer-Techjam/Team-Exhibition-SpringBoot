@@ -1,7 +1,6 @@
 package com.example.shiory.dto;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +9,7 @@ import lombok.Setter;
 @Setter
 public class InvitationCreateRequest {
 
-	@NotBlank
+	// ログイン必須の受領画面でパスワード確認するため、招待作成時のメール入力は必須にしない
 	@Email
 	private String inviteeEmail;
 

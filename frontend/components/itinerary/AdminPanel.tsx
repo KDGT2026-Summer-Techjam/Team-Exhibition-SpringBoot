@@ -1,6 +1,7 @@
 "use client";
 
 import { DeleteItineraryForm } from "@/components/admin/DeleteItineraryForm";
+import { InviteButton } from "@/components/admin/InviteButton";
 import { ItinerarySettingsForm } from "@/components/admin/ItinerarySettingsForm";
 import { MemberList } from "@/components/admin/MemberList";
 import { PagePermissionSettings } from "@/components/admin/PagePermissionSettings";
@@ -36,13 +37,16 @@ export function AdminPanel({
         {isOwner && <PagePermissionSettings days={itinerary.days} />}
 
         <Card className="overflow-hidden bg-paper p-0">
-          <div className="border-b border-line/80 bg-paper-deep px-5 py-4">
-            <h3 className="font-heading text-lg font-bold text-ink">
-              メンバー一覧
-            </h3>
-            <p className="mt-1 text-sm leading-relaxed text-ink-muted">
-              参加中のメンバーを確認し、必要に応じて退出させられます
-            </p>
+          <div className="flex items-start justify-between gap-3 border-b border-line/80 bg-paper-deep px-5 py-4">
+            <div>
+              <h3 className="font-heading text-lg font-bold text-ink">
+                メンバー一覧
+              </h3>
+              <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+                参加中のメンバーを確認し、必要に応じて退出させられます
+              </p>
+            </div>
+            {isOwner && <InviteButton />}
           </div>
           <div className="p-5">
             <MemberList members={members} onBan={banMemberById} />

@@ -31,7 +31,7 @@ public class Invitation {
 	@Column(name = "inviter_id", nullable = false)
 	private UUID inviterId;
 
-	@Column(name = "invitee_email", nullable = false)
+	@Column(name = "invitee_email")
 	private String inviteeEmail;
 
 	@Column
