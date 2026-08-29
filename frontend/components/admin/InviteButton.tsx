@@ -69,7 +69,7 @@ export function InviteButton() {
       <Button
         type="button"
         variant="secondary"
-        className="max-w-full shrink-0 gap-1.5 px-3 py-1.5 text-xs"
+        className="w-36 max-w-full shrink-0 gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs"
         onClick={handleClick}
         disabled={loading}
       >
