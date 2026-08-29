@@ -81,6 +81,12 @@ public class InvitationService {
 		Shiori shiori = shioriRepository.findById(invitation.getShioriId())
 				.orElseThrow(() -> new ResourceNotFoundException("しおりが見つかりません"));
 
+		// 作成者が自分の招待を受諾すると、しおり管理者なのにメンバー一覧上は
+		// 「メンバー」扱い（BAN表示など）になってしまうため、作成者本人は受諾できない
+		if (shiori.getOwnerId().equals(userId)) {
+			throw new BadRequestException("作成者は招待を使って参加できません");
+		}
+
 		if (!passwordEncoder.matches(password, shiori.getPasswordHash())) {
 			throw new BadRequestException("しおりのパスワードが正しくありません");
 		}
