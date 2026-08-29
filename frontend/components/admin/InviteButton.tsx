@@ -65,20 +65,17 @@ export function InviteButton() {
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex max-w-full flex-col items-end gap-1.5">
       <Button
         type="button"
         variant="secondary"
-        className="shrink-0 gap-1.5 px-3 py-1.5 text-xs"
+        className="max-w-full shrink-0 gap-1.5 px-3 py-1.5 text-xs"
         onClick={handleClick}
         disabled={loading}
       >
         {status === "copied" ? <CheckIcon /> : <CopyIcon />}
         {loading ? "発行中…" : "招待URLをコピー"}
       </Button>
-      {status === "copied" && (
-        <p className="text-xs text-accent">招待リンクをコピーしました</p>
-      )}
       {status === "error" && (
         <p className="text-xs text-danger" role="alert">
           {error}

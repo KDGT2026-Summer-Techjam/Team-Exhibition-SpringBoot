@@ -38,7 +38,7 @@ export function AdminPanel({
 
         <Card className="overflow-hidden bg-paper p-0">
           <div className="flex items-start justify-between gap-3 border-b border-line/80 bg-paper-deep px-5 py-4">
-            <div>
+            <div className="min-w-0">
               <h3 className="font-heading text-lg font-bold text-ink">
                 メンバー一覧
               </h3>
